@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const acorn   = require("acorn");
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 1 — TOKENIZER  (original, unchanged)
+// SECTION 1 — TOKENIZER
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -248,7 +248,7 @@ export function hashSource(source, opts = {}) {
 
   
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 5 — CLI  (unchanged behaviour, extended output)
+// SECTION 5 — CLI
 // ─────────────────────────────────────────────────────────────────────────────
 
 const filePath = process.argv[2];
