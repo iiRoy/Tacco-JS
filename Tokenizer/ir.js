@@ -1,23 +1,4 @@
 /**
- * ir.js — Intermediate Representation for Tacco JS
- *
- * Generates a Three-Address Code (TAC) IR from an Acorn ESTree AST,
- * builds a CFG over that IR, and extracts numerical similarity features
- * that can be appended to the similarity vector in compare.js.
- *
- * Why TAC instead of LLVM IR
- * ──────────────────────────
- * LLVM IR requires a fully typed, statically analysable program. Modern
- * JavaScript (ES2022 with classes, destructuring, async/await, closures,
- * optional chaining, etc.) cannot be lowered to LLVM IR without a full
- * type-inference and specialisation pipeline. js-ziju, the library
- * originally considered, only handles a small arithmetic subset and fails
- * silently on real-world dataset files.
- *
- * TAC operates at the AST level — the same level used by the Toma paper
- * that is the methodological foundation of Tacco JS — and covers the full
- * ES2022 grammar that Acorn already parses. Every dataset file tokenisable
- * by the tokeniser can also be lifted to this IR.
  *
  * IR grammar (text representation)
  * ─────────────────────────────────

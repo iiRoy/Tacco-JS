@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { tokenizeFile } from "../Tokenizer/Tokenizer-Parser.js";
+import { buildIRFromFile, extractIRFeatures, IR_FEATURE_NAMES } from "../Tokenizer/ir.js";
 
 /*
   ============================================================
@@ -647,6 +648,7 @@ function compareTwoFiles(fileA, fileB, options = {}) {
 
     lengthRatio: lengthRatio(sequenceA, sequenceB),
     vocabularyRatio: vocabularyRatio(setA, setB),
+    ...irFeatureMap,
   };
 
   const similarityFeatureVector = [
@@ -666,7 +668,17 @@ function compareTwoFiles(fileA, fileB, options = {}) {
     metrics.gaussianChebyshevSimilarity,
     metrics.lengthRatio,
     metrics.vocabularyRatio,
+    ...irFeatureVec,
   ];
+
+  // IR-based structural features
+  const irA          = buildIRFromFile(normalizedFileA);
+  const irB          = buildIRFromFile(normalizedFileB);
+  const irFeatureVec = extractIRFeatures(irA, irB);
+
+  const irFeatureMap = Object.fromEntries(
+    IR_FEATURE_NAMES.map((name, i) => [name, irFeatureVec[i]])
+  );
 
   return {
     fileA: normalizedFileA,
