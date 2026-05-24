@@ -246,9 +246,413 @@ export function hashSource(source, opts = {}) {
   return { hash, normalizedAST };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 5 — CONTROL FLOW GRAPH (CFG)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A CFG node (basic block).
+ *
+ * @typedef {Object} CFGNode
+ * @property {string}   id          Unique block identifier, e.g. "B0".
+ * @property {string}   label       Human-readable description of the block.
+ * @property {string[]} stmts       AST node types of statements in this block.
+ * @property {string[]} successors  IDs of blocks this block may transfer to.
+ * @property {string}   [condition] Stringified test expression (If/Switch/loop).
+ */
+
+/**
+ * Build a CFG for a single function body (BlockStatement) or for a top-level
+ * Program node.
+ *
+ * Algorithm
+ * ─────────
+ * We traverse statements left-to-right and emit basic blocks.  A new block
+ * starts whenever the previous block ends with a branching statement.
+ * Supported control-flow constructs:
+ *
+ *   IfStatement           → true-branch block + false-branch block (or fall-through)
+ *   WhileStatement        → loop-header block + body block + exit block
+ *   ForStatement          → same shape as While (init merged into header)
+ *   ForInStatement /
+ *   ForOfStatement        → same shape as While
+ *   DoWhileStatement      → body block first, then header/test block
+ *   SwitchStatement       → one block per case + default, fall-through modelled
+ *   TryStatement          → try block + catch block + finally block
+ *   ReturnStatement /
+ *   ThrowStatement        → terminates the current block (no fall-through)
+ *   BreakStatement /
+ *   ContinueStatement     → terminates the current block with a back/exit edge
+ *
+ * All other statement types (ExpressionStatement, VariableDeclaration, etc.)
+ * are collected into the current linear block.
+ *
+ * @param {acorn.Node} astNode  A Program node or a FunctionDeclaration /
+ *                              FunctionExpression / ArrowFunctionExpression.
+ * @returns {{ nodes: CFGNode[], entry: string, exits: string[] }}
+ */
+export function buildCFG(astNode) {
+  const nodes  = [];   // CFGNode[]
+  let   nextId = 0;
+
+  // ── internal helpers ────────────────────────────────────────────────────
+
+  function newBlock(label = "") {
+    const id = `B${nextId++}`;
+    /** @type {CFGNode} */
+    const block = { id, label, stmts: [], successors: [] };
+    nodes.push(block);
+    return block;
+  }
+
+  function addEdge(from, toId) {
+    if (from && !from.successors.includes(toId)) {
+      from.successors.push(toId);
+    }
+  }
+
+  function exprText(node) {
+    if (!node) return "";
+    // Best-effort one-line representation for labels
+    switch (node.type) {
+      case "BinaryExpression":
+      case "LogicalExpression":
+        return `${exprText(node.left)} ${node.operator} ${exprText(node.right)}`;
+      case "UnaryExpression":
+        return `${node.operator}${exprText(node.argument)}`;
+      case "Identifier":
+        return node.name;
+      case "Literal":
+        return String(node.value);
+      case "MemberExpression":
+        return `${exprText(node.object)}.${exprText(node.property)}`;
+      case "CallExpression":
+        return `${exprText(node.callee)}(...)`;
+      case "AssignmentExpression":
+        return `${exprText(node.left)} ${node.operator} ${exprText(node.right)}`;
+      default:
+        return node.type;
+    }
+  }
+
+  /**
+   * Process an array of statements into the CFG.
+   *
+   * @param {acorn.Node[]} stmts      List of statement AST nodes.
+   * @param {CFGNode}      current    The block currently being filled.
+   * @param {string|null}  breakTarget   ID of the block a break statement jumps to.
+   * @param {string|null}  continueTarget ID of the block a continue statement jumps to.
+   * @returns {CFGNode|null}  The last block after processing (null if all paths
+   *                          terminated with return/throw/break/continue).
+   */
+  function processStmts(stmts, current, breakTarget = null, continueTarget = null) {
+    let cur = current;
+
+    for (const stmt of stmts) {
+      if (!cur) break; // previous statement was a terminator
+
+      switch (stmt.type) {
+
+        // ── If ─────────────────────────────────────────────────────────────
+        case "IfStatement": {
+          cur.stmts.push("IfStatement");
+          cur.condition = exprText(stmt.test);
+          cur.label     = cur.label || `if (${cur.condition})`;
+
+          const thenBlock = newBlock("then");
+          const elseBlock = stmt.alternate ? newBlock("else") : null;
+          const exitBlock = newBlock("if-exit");
+
+          addEdge(cur, thenBlock.id);
+          if (elseBlock) addEdge(cur, elseBlock.id);
+          else           addEdge(cur, exitBlock.id);
+
+          // then branch
+          const thenEnd = processStmts(
+            stmt.consequent.type === "BlockStatement"
+              ? stmt.consequent.body
+              : [stmt.consequent],
+            thenBlock, breakTarget, continueTarget,
+          );
+          if (thenEnd) addEdge(thenEnd, exitBlock.id);
+
+          // else branch
+          if (elseBlock && stmt.alternate) {
+            const elseEnd = processStmts(
+              stmt.alternate.type === "BlockStatement"
+                ? stmt.alternate.body
+                : [stmt.alternate],
+              elseBlock, breakTarget, continueTarget,
+            );
+            if (elseEnd) addEdge(elseEnd, exitBlock.id);
+          }
+
+          cur = exitBlock;
+          break;
+        }
+
+        // ── While ──────────────────────────────────────────────────────────
+        case "WhileStatement": {
+          const headerBlock = newBlock(`while (${exprText(stmt.test)})`);
+          const bodyBlock   = newBlock("while-body");
+          const exitBlock   = newBlock("while-exit");
+
+          addEdge(cur, headerBlock.id);
+          addEdge(headerBlock, bodyBlock.id);
+          addEdge(headerBlock, exitBlock.id);    // condition false
+
+          const bodyEnd = processStmts(
+            stmt.body.type === "BlockStatement" ? stmt.body.body : [stmt.body],
+            bodyBlock, exitBlock.id, headerBlock.id,
+          );
+          if (bodyEnd) addEdge(bodyEnd, headerBlock.id);  // back-edge
+
+          cur = exitBlock;
+          break;
+        }
+
+        // ── For ────────────────────────────────────────────────────────────
+        case "ForStatement": {
+          // init goes into the current block, then same shape as while
+          if (stmt.init) cur.stmts.push(stmt.init.type);
+
+          const test        = stmt.test ? exprText(stmt.test) : "true";
+          const headerBlock = newBlock(`for (${test})`);
+          const bodyBlock   = newBlock("for-body");
+          const exitBlock   = newBlock("for-exit");
+
+          addEdge(cur, headerBlock.id);
+          addEdge(headerBlock, bodyBlock.id);
+          addEdge(headerBlock, exitBlock.id);
+
+          const bodyEnd = processStmts(
+            stmt.body.type === "BlockStatement" ? stmt.body.body : [stmt.body],
+            bodyBlock, exitBlock.id, headerBlock.id,
+          );
+          if (bodyEnd) {
+            // update expression before back-edge
+            if (stmt.update) bodyEnd.stmts.push(stmt.update.type);
+            addEdge(bodyEnd, headerBlock.id);
+          }
+
+          cur = exitBlock;
+          break;
+        }
+
+        // ── ForIn / ForOf ──────────────────────────────────────────────────
+        case "ForInStatement":
+        case "ForOfStatement": {
+          const kind        = stmt.type === "ForInStatement" ? "for..in" : "for..of";
+          const headerBlock = newBlock(`${kind} header`);
+          const bodyBlock   = newBlock(`${kind}-body`);
+          const exitBlock   = newBlock(`${kind}-exit`);
+
+          addEdge(cur, headerBlock.id);
+          addEdge(headerBlock, bodyBlock.id);
+          addEdge(headerBlock, exitBlock.id);
+
+          const bodyEnd = processStmts(
+            stmt.body.type === "BlockStatement" ? stmt.body.body : [stmt.body],
+            bodyBlock, exitBlock.id, headerBlock.id,
+          );
+          if (bodyEnd) addEdge(bodyEnd, headerBlock.id);
+
+          cur = exitBlock;
+          break;
+        }
+
+        // ── DoWhile ────────────────────────────────────────────────────────
+        case "DoWhileStatement": {
+          const bodyBlock   = newBlock("do-body");
+          const testBlock   = newBlock(`while (${exprText(stmt.test)})`);
+          const exitBlock   = newBlock("do-exit");
+
+          addEdge(cur, bodyBlock.id);
+
+          const bodyEnd = processStmts(
+            stmt.body.type === "BlockStatement" ? stmt.body.body : [stmt.body],
+            bodyBlock, exitBlock.id, testBlock.id,
+          );
+          if (bodyEnd) addEdge(bodyEnd, testBlock.id);
+
+          addEdge(testBlock, bodyBlock.id);  // true → back
+          addEdge(testBlock, exitBlock.id);  // false → exit
+
+          cur = exitBlock;
+          break;
+        }
+
+        // ── Switch ─────────────────────────────────────────────────────────
+        case "SwitchStatement": {
+          cur.stmts.push("SwitchStatement");
+          cur.condition = exprText(stmt.discriminant);
+          cur.label     = cur.label || `switch (${cur.condition})`;
+
+          const exitBlock   = newBlock("switch-exit");
+          let   prevBlock   = null;
+
+          for (const caseNode of stmt.cases) {
+            const caseLabel = caseNode.test
+              ? `case ${exprText(caseNode.test)}`
+              : "default";
+            const caseBlock = newBlock(caseLabel);
+
+            addEdge(cur, caseBlock.id);              // discriminant → case
+            if (prevBlock) addEdge(prevBlock, caseBlock.id); // fall-through
+
+            const caseEnd = processStmts(
+              caseNode.consequent, caseBlock, exitBlock.id, null,
+            );
+            prevBlock = caseEnd; // may fall through to next case
+          }
+
+          if (prevBlock) addEdge(prevBlock, exitBlock.id);
+
+          cur = exitBlock;
+          break;
+        }
+
+        // ── Try / Catch / Finally ──────────────────────────────────────────
+        case "TryStatement": {
+          const tryBlock     = newBlock("try");
+          const catchBlock   = stmt.handler  ? newBlock("catch")   : null;
+          const finallyBlock = stmt.finalizer ? newBlock("finally") : null;
+          const exitBlock    = newBlock("try-exit");
+
+          addEdge(cur, tryBlock.id);
+
+          const tryEnd = processStmts(
+            stmt.block.body, tryBlock, breakTarget, continueTarget,
+          );
+
+          // Exception edge
+          if (catchBlock) {
+            addEdge(tryBlock, catchBlock.id);
+            if (tryEnd) addEdge(tryEnd, catchBlock.id);  // implicit throw path
+
+            const catchEnd = processStmts(
+              stmt.handler.body.body, catchBlock, breakTarget, continueTarget,
+            );
+            if (finallyBlock) {
+              if (catchEnd) addEdge(catchEnd, finallyBlock.id);
+            } else {
+              if (catchEnd) addEdge(catchEnd, exitBlock.id);
+            }
+          } else if (tryEnd) {
+            addEdge(tryEnd, finallyBlock ? finallyBlock.id : exitBlock.id);
+          }
+
+          if (finallyBlock) {
+            const finallyEnd = processStmts(
+              stmt.finalizer.body, finallyBlock, breakTarget, continueTarget,
+            );
+            if (finallyEnd) addEdge(finallyEnd, exitBlock.id);
+          }
+
+          cur = exitBlock;
+          break;
+        }
+
+        // ── Return / Throw  (terminators) ─────────────────────────────────
+        case "ReturnStatement":
+        case "ThrowStatement": {
+          cur.stmts.push(stmt.type);
+          cur.label = cur.label || stmt.type;
+          cur = null;  // path ends — no fall-through
+          break;
+        }
+
+        // ── Break ──────────────────────────────────────────────────────────
+        case "BreakStatement": {
+          cur.stmts.push("BreakStatement");
+          if (breakTarget) addEdge(cur, breakTarget);
+          cur = null;
+          break;
+        }
+
+        // ── Continue ───────────────────────────────────────────────────────
+        case "ContinueStatement": {
+          cur.stmts.push("ContinueStatement");
+          if (continueTarget) addEdge(cur, continueTarget);
+          cur = null;
+          break;
+        }
+
+        // ── Nested function declarations: recurse but keep in same CFG ─────
+        case "FunctionDeclaration": {
+          cur.stmts.push("FunctionDeclaration");
+          // The nested function gets its own sub-CFG appended to the same
+          // nodes array so callers see the complete picture.
+          const subEntry = newBlock(`fn:${stmt.id ? stmt.id.name : "anon"}`);
+          addEdge(cur, subEntry.id);  // declaration flow continues after
+          processStmts(stmt.body.body, subEntry, null, null);
+          // execution continues in cur after the declaration
+          break;
+        }
+
+        // ── Linear statements (default) ───────────────────────────────────
+        default: {
+          cur.stmts.push(stmt.type);
+          if (!cur.label) cur.label = stmt.type;
+          break;
+        }
+      }
+    }
+
+    return cur; // null if all paths terminated
+  }
+
+  // ── Entry point ──────────────────────────────────────────────────────────
+
+  let stmtsToProcess;
+
+  switch (astNode.type) {
+    case "Program":
+      stmtsToProcess = astNode.body;
+      break;
+    case "FunctionDeclaration":
+    case "FunctionExpression":
+    case "ArrowFunctionExpression":
+      stmtsToProcess = astNode.body.type === "BlockStatement"
+        ? astNode.body.body
+        : [{ type: "ReturnStatement", argument: astNode.body }];
+      break;
+    default:
+      throw new Error(
+        `buildCFG: unsupported root node type "${astNode.type}". ` +
+        "Pass a Program, FunctionDeclaration, FunctionExpression or " +
+        "ArrowFunctionExpression node.",
+      );
+  }
+
+  const entryBlock = newBlock("entry");
+  const lastBlock  = processStmts(stmtsToProcess, entryBlock, null, null);
+
+  // Collect exit blocks: blocks with no successors
+  const exits = nodes
+    .filter((b) => b.successors.length === 0)
+    .map((b) => b.id);
+
+  return { nodes, entry: entryBlock.id, exits };
+}
+
+/**
+ * Build a CFG from a file on disk.
+ *
+ * For multi-function files this returns the top-level Program CFG, which
+ * includes edges into nested function declaration sub-graphs.
+ *
+ * @param {string} filePath
+ * @param {object} [opts]   Forwarded to buildAST.
+ * @returns {{ nodes: CFGNode[], entry: string, exits: string[] }}
+ */
+export function buildCFGFromFile(filePath, opts = {}) {
+  const ast = buildASTFromFile(filePath, opts);
+  return buildCFG(ast);
+}
   
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 5 — CLI
+// SECTION 6 — CLI
 // ─────────────────────────────────────────────────────────────────────────────
 
 const filePath = process.argv[2];
@@ -292,6 +696,12 @@ switch (mode) {
     break;
   }
 
+  case "cfg": {
+    const ast = buildAST(source);
+    const cfg = buildCFG(ast);
+    console.log(JSON.stringify(cfg, null, 2));
+    break;
+  }
 
   case "all": {
     const tokens = tokenizeSource(source);
@@ -299,6 +709,7 @@ switch (mode) {
     const norm   = normalizeAST(ast);
     const { hash: h1 } = hashSource(source, { identMode: "keep"     });
     const { hash: h2 } = hashSource(source, { identMode: "abstract" });
+    const cfg    = buildCFG(ast);
 
     console.log(JSON.stringify({
       file          : path.basename(filePath),
