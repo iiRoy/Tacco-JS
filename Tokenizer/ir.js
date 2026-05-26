@@ -39,6 +39,7 @@
 import fs            from "fs";
 import path          from "path";
 import { createRequire } from "module";
+import { fileURLToPath } from "url";
 
 const require = createRequire(import.meta.url);
 const acorn   = require("acorn");
@@ -851,54 +852,56 @@ export function extractIRFeatures(irA, irB) {
 // SECTION 6 — CLI
 // ─────────────────────────────────────────────────────────────────────────────
 
-const [,, cliFile, cliMode = "ir", cliFile2] = process.argv;
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const [,, cliFile, cliMode = "ir", cliFile2] = process.argv;
 
-if (!cliFile) {
-  console.error(
-    "Usage: node ir.js <file.js> [ir|cfg|stats|features <file2.js>]",
-  );
-  process.exit(1);
-}
-
-const irA = buildIRFromFile(cliFile);
-
-switch (cliMode) {
-
-  case "ir":
-    console.log(irA.text);
-    break;
-
-  case "cfg": {
-    const cfg = buildCFGFromIR(irA);
-    console.log(JSON.stringify(cfg, null, 2));
-    break;
-  }
-
-  case "stats":
-    console.log(JSON.stringify({
-      file      : path.basename(cliFile),
-      stats     : irA.stats,
-      functions : irA.functions.map((f) => ({ name: f.name, stats: f.stats })),
-    }, null, 2));
-    break;
-
-  case "features": {
-    if (!cliFile2) {
-      console.error("features mode requires a second file: node ir.js <a.js> features <b.js>");
-      process.exit(1);
-    }
-    const irB  = buildIRFromFile(cliFile2);
-    const vec  = extractIRFeatures(irA, irB);
-    console.log(JSON.stringify({
-      fileA    : path.basename(cliFile),
-      fileB    : path.basename(cliFile2),
-      features : Object.fromEntries(IR_FEATURE_NAMES.map((n, i) => [n, vec[i]])),
-      vector   : vec,
-    }, null, 2));
-    break;
-  }
-
-  default:
-    console.error(`Unknown mode "${cliMode}". Use: ir | cfg | stats | features <file2.js>`);
+  if (!cliFile) {
+    console.error(
+      "Usage: node ir.js <file.js> [ir|cfg|stats|features <file2.js>]",
+    );
     process.exit(1);
+  }
+
+  const irA = buildIRFromFile(cliFile);
+
+  switch (cliMode) {
+
+    case "ir":
+      console.log(irA.text);
+      break;
+
+    case "cfg": {
+      const cfg = buildCFGFromIR(irA);
+      console.log(JSON.stringify(cfg, null, 2));
+      break;
+    }
+
+    case "stats":
+      console.log(JSON.stringify({
+        file      : path.basename(cliFile),
+        stats     : irA.stats,
+        functions : irA.functions.map((f) => ({ name: f.name, stats: f.stats })),
+      }, null, 2));
+      break;
+
+    case "features": {
+      if (!cliFile2) {
+        console.error("features mode requires a second file: node ir.js <a.js> features <b.js>");
+        process.exit(1);
+      }
+      const irB  = buildIRFromFile(cliFile2);
+      const vec  = extractIRFeatures(irA, irB);
+      console.log(JSON.stringify({
+        fileA    : path.basename(cliFile),
+        fileB    : path.basename(cliFile2),
+        features : Object.fromEntries(IR_FEATURE_NAMES.map((n, i) => [n, vec[i]])),
+        vector   : vec,
+      }, null, 2));
+      break;
+    }
+
+    default:
+      console.error(`Unknown mode "${cliMode}". Use: ir | cfg | stats | features <file2.js>`);
+      process.exit(1);
+  }
 }

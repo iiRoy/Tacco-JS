@@ -5,6 +5,7 @@ import fs   from "fs";
 import path from "path";
 import { createHash } from "crypto";
 import { createRequire } from "module";
+import { fileURLToPath } from "url";
 
 import { Tokenizr } from "tokenizr";
 
@@ -655,74 +656,75 @@ export function buildCFGFromFile(filePath, opts = {}) {
 // SECTION 6 — CLI
 // ─────────────────────────────────────────────────────────────────────────────
 
-const filePath = process.argv[2];
-const mode     = process.argv[3] ?? "tokens"; // tokens | ast | hash | cfg | all
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const filePath = process.argv[2];
+  const mode     = process.argv[3] ?? "tokens"; // tokens | ast | hash | cfg | all
 
-if (!filePath) {
-  console.error(
-    "Usage: node Tokenizer-Tokenizr.js <file.js> [tokens|ast|hash|cfg|all]",
-  );
-  process.exit(1);
-}
-
-const source = fs.readFileSync(filePath, "utf-8");
-
-switch (mode) {
-
-  case "tokens": {
-    const tokens = tokenizeSource(source);
-    tokens.forEach((t) =>
-      console.log(`[${t.type}] "${t.value}"  (line ${t.line})`),
+  if (!filePath) {
+    console.error(
+      "Usage: node Tokenizer-Tokenizr.js <file.js> [tokens|ast|hash|cfg|all]",
     );
-    break;
-  }
-
-  case "ast": {
-    const ast  = buildAST(source);
-    const norm = normalizeAST(ast);
-    console.log(JSON.stringify(norm, null, 2));
-    break;
-  }
-
-  case "hash": {
-    // Print both hashes so callers can compare Type-1 vs Type-2 similarity
-    const { hash: h1 } = hashSource(source, { identMode: "keep"     });
-    const { hash: h2 } = hashSource(source, { identMode: "abstract" });
-    console.log(JSON.stringify({
-      file          : path.basename(filePath),
-      hash_type1    : h1,   // sensitive to identifier names
-      hash_type2    : h2,   // abstracts identifier names → Type-2 matching
-    }, null, 2));
-    break;
-  }
-
-  case "cfg": {
-    const ast = buildAST(source);
-    const cfg = buildCFG(ast);
-    console.log(JSON.stringify(cfg, null, 2));
-    break;
-  }
-
-  case "all": {
-    const tokens = tokenizeSource(source);
-    const ast    = buildAST(source);
-    const norm   = normalizeAST(ast);
-    const { hash: h1 } = hashSource(source, { identMode: "keep"     });
-    const { hash: h2 } = hashSource(source, { identMode: "abstract" });
-    const cfg    = buildCFG(ast);
-
-    console.log(JSON.stringify({
-      file          : path.basename(filePath),
-      token_count   : tokens.length,
-      tokens,
-      hash_type1    : h1,
-      hash_type2    : h2,
-      normalizedAST : norm,
-    }, null, 2));
-    break;
-  }
-
-  default:
-    console.error(`Unknown mode "${mode}". Use: tokens | ast | hash | all`);
     process.exit(1);
+  }
+
+  const source = fs.readFileSync(filePath, "utf-8");
+
+  switch (mode) {
+
+    case "tokens": {
+      const tokens = tokenizeSource(source);
+      tokens.forEach((t) =>
+        console.log(`[${t.type}] "${t.value}"  (line ${t.line})`),
+      );
+      break;
+    }
+
+    case "ast": {
+      const ast  = buildAST(source);
+      const norm = normalizeAST(ast);
+      console.log(JSON.stringify(norm, null, 2));
+      break;
+    }
+
+    case "hash": {
+      const { hash: h1 } = hashSource(source, { identMode: "keep"     });
+      const { hash: h2 } = hashSource(source, { identMode: "abstract" });
+      console.log(JSON.stringify({
+        file          : path.basename(filePath),
+        hash_type1    : h1,
+        hash_type2    : h2,
+      }, null, 2));
+      break;
+    }
+
+    case "cfg": {
+      const ast = buildAST(source);
+      const cfg = buildCFG(ast);
+      console.log(JSON.stringify(cfg, null, 2));
+      break;
+    }
+
+    case "all": {
+      const tokens = tokenizeSource(source);
+      const ast    = buildAST(source);
+      const norm   = normalizeAST(ast);
+      const { hash: h1 } = hashSource(source, { identMode: "keep"     });
+      const { hash: h2 } = hashSource(source, { identMode: "abstract" });
+      const cfg    = buildCFG(ast);
+
+      console.log(JSON.stringify({
+        file          : path.basename(filePath),
+        token_count   : tokens.length,
+        tokens,
+        hash_type1    : h1,
+        hash_type2    : h2,
+        normalizedAST : norm,
+      }, null, 2));
+      break;
+    }
+
+    default:
+      console.error(`Unknown mode "${mode}". Use: tokens | ast | hash | all`);
+      process.exit(1);
+  }
 }

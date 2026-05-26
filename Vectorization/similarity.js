@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { tokenizeFile } from "../Tokenizer/Tokenizer-Parser.js";
+import { tokenizeFile, buildAST, normalizeAST } from "../Tokenizer/Tokenizer-Parser.js";
 import { buildIRFromFile, extractIRFeatures, IR_FEATURE_NAMES } from "../Tokenizer/ir.js";
 
 /*
@@ -579,6 +579,56 @@ function vocabularyRatio(setA, setB) {
 
 /*
   ============================================================
+  AST NORMALIZADO  (identificadores abstraídos → "ID")
+  ============================================================
+*/
+
+function astNodeSequence(node) {
+  if (!node || typeof node !== "object") return [];
+  if (Array.isArray(node)) {
+    const seq = [];
+    for (const child of node) seq.push(...astNodeSequence(child));
+    return seq;
+  }
+  if (typeof node.type !== "string") return [];
+  const seq = [node.type];
+  for (const key of Object.keys(node)) {
+    if (key === "type") continue;
+    const child = node[key];
+    if (child && typeof child === "object") seq.push(...astNodeSequence(child));
+  }
+  return seq;
+}
+
+function normalizedASTSequence(filePath) {
+  try {
+    const source = fs.readFileSync(filePath, "utf-8");
+    const ast    = buildAST(source);
+    const norm   = normalizeAST(ast, "abstract");
+    return astNodeSequence(norm);
+  } catch (_) {
+    return [];
+  }
+}
+
+function astSimilarities(seqA, seqB) {
+  if (seqA.length === 0 && seqB.length === 0) {
+    return { normASTJaccard: 1, normASTLCSRatio: 1, normASTCosine: 1 };
+  }
+  if (seqA.length === 0 || seqB.length === 0) {
+    return { normASTJaccard: 0, normASTLCSRatio: 0, normASTCosine: 0 };
+  }
+  const setA = sequenceToSet(seqA);
+  const setB = sequenceToSet(seqB);
+  return {
+    normASTJaccard:  jaccardSimilarity(setA, setB),
+    normASTLCSRatio: lcsRatio(seqA, seqB),
+    normASTCosine:   cosineSimilarity(seqA, seqB),
+  };
+}
+
+/*
+  ============================================================
   COMPARACION ENTRE DOS ARCHIVOS
   ============================================================
 */
@@ -618,6 +668,20 @@ function compareTwoFiles(fileA, fileB, options = {}) {
   const gaussianMinkowskiSigma = sigmaForDistance(minkowski, configuredSigma);
   const gaussianChebyshevSigma = sigmaForDistance(chebyshev, configuredSigma);
 
+  // Normalized AST features (identifiers abstracted to "ID")
+  const astSeqA   = normalizedASTSequence(normalizedFileA);
+  const astSeqB   = normalizedASTSequence(normalizedFileB);
+  const astSims   = astSimilarities(astSeqA, astSeqB);
+
+  // IR-based structural features (must be computed before use in metrics/vector)
+  const irA          = buildIRFromFile(normalizedFileA);
+  const irB          = buildIRFromFile(normalizedFileB);
+  const irFeatureVec = extractIRFeatures(irA, irB);
+
+  const irFeatureMap = Object.fromEntries(
+    IR_FEATURE_NAMES.map((name, i) => [name, irFeatureVec[i]])
+  );
+
   const metrics = {
     jaccardSimilarity: jaccardSimilarity(setA, setB),
     diceSimilarity: diceSimilarity(setA, setB),
@@ -649,6 +713,9 @@ function compareTwoFiles(fileA, fileB, options = {}) {
     lengthRatio: lengthRatio(sequenceA, sequenceB),
     vocabularyRatio: vocabularyRatio(setA, setB),
     ...irFeatureMap,
+    normASTJaccard:  astSims.normASTJaccard,
+    normASTLCSRatio: astSims.normASTLCSRatio,
+    normASTCosine:   astSims.normASTCosine,
   };
 
   const similarityFeatureVector = [
@@ -669,16 +736,10 @@ function compareTwoFiles(fileA, fileB, options = {}) {
     metrics.lengthRatio,
     metrics.vocabularyRatio,
     ...irFeatureVec,
+    metrics.normASTJaccard,
+    metrics.normASTLCSRatio,
+    metrics.normASTCosine,
   ];
-
-  // IR-based structural features
-  const irA          = buildIRFromFile(normalizedFileA);
-  const irB          = buildIRFromFile(normalizedFileB);
-  const irFeatureVec = extractIRFeatures(irA, irB);
-
-  const irFeatureMap = Object.fromEntries(
-    IR_FEATURE_NAMES.map((name, i) => [name, irFeatureVec[i]])
-  );
 
   return {
     fileA: normalizedFileA,
