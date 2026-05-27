@@ -18,8 +18,8 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 # ─────────────────────────────────────────────
 
 COMPARE_JS = Path("Vectorization/compare.js")
-BASE_DIR   = Path("dataset/dataset general/js_files")
-CLONES_DIR = Path("dataset/dataset general/clones")
+BASE_DIR   = Path("dataset/dataset solutions/js_files")
+CLONES_DIR = Path("dataset/dataset solutions/clones")
 
 CACHE_DIR     = Path(".cache")
 FEATURE_CACHE = CACHE_DIR / "rf_features_cache.npz"
